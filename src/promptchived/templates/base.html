@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Promptchived{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/app.css') }}">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/">Promptchived</a>
+      <nav>
+        <a href="/conversations">Percakapan</a>
+        <a href="/search">Pencarian</a>
+      </nav>
+    </header>
+    <main class="container">{% block content %}{% endblock %}</main>
+    <footer>Arsip lokal · data tetap di komputer Anda</footer>
+  </body>
+</html>
+

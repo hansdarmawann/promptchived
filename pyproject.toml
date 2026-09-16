@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "promptchived"
+version = "0.1.0"
+description = "Arsip lokal dan pencarian hybrid untuk ekspor ChatGPT dan Gemini"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "alembic>=1.14,<2",
+  "beautifulsoup4>=4.12,<5",
+  "bleach>=6.2,<7",
+  "fastapi>=0.115,<1",
+  "jinja2>=3.1,<4",
+  "markdown-it-py>=3.0,<4",
+  "pgvector>=0.3,<1",
+  "psycopg[binary]>=3.2,<4",
+  "pydantic-settings>=2.7,<3",
+  "python-dateutil>=2.9,<3",
+  "python-multipart>=0.0.20,<1",
+  "sentence-transformers>=3.3,<4",
+  "sqlalchemy>=2.0,<3",
+  "uvicorn[standard]>=0.34,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.28,<1",
+  "pytest>=8.3,<9",
+  "pytest-cov>=6,<7",
+]
+
+[project.scripts]
+promptchived = "promptchived.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/promptchived"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+

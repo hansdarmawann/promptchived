@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Pencarian · Promptchived{% endblock %}
+{% block content %}
+<section class="search-hero"><p class="eyebrow">Temukan kembali</p><h1>Cari seluruh arsip</h1>
+<form method="get" action="/search" class="search-form">
+  <input name="q" value="{{ q }}" placeholder="Apa yang pernah saya bahas?" autofocus required>
+  <select name="mode"><option value="hybrid" {% if mode == 'hybrid' %}selected{% endif %}>Gabungan</option><option value="fulltext" {% if mode == 'fulltext' %}selected{% endif %}>Kata kunci</option><option value="semantic" {% if mode == 'semantic' %}selected{% endif %}>Semantic</option></select>
+  <select name="provider"><option value="">Semua sumber</option><option value="chatgpt" {% if provider == 'chatgpt' %}selected{% endif %}>ChatGPT</option><option value="gemini" {% if provider == 'gemini' %}selected{% endif %}>Gemini</option></select>
+  <select name="role"><option value="">Semua peran</option><option value="user" {% if role == 'user' %}selected{% endif %}>Anda</option><option value="assistant" {% if role == 'assistant' %}selected{% endif %}>Asisten</option></select>
+  <button type="submit">Cari</button>
+</form></section>
+{% if result %}
+  <div class="result-meta"><span>{{ result.mode }} · embedding {{ (result.embedding_coverage * 100)|round|int }}%</span>{% if result.notice %}<span class="notice">{{ result.notice }}</span>{% endif %}</div>
+  <section class="results">
+  {% for item in result['items'] %}
+    <a class="result" href="/conversations/{{ item.conversation_id }}?branches=true&focus={{ item.message_id }}#message-{{ item.message_id }}">
+      <header><span class="badge {{ item.provider }}">{{ item.provider }}</span><strong>{{ item.conversation_title }}</strong><time>{{ item.created_at|localtime }}</time></header>
+      <p>{{ item.snippet|highlight|safe }}</p><footer>{{ item.role }} · skor {{ '%.4f'|format(item.score) }}</footer>
+    </a>
+  {% else %}<div class="empty">Tidak ada hasil yang cocok.</div>{% endfor %}
+  </section>
+{% endif %}
+{% endblock %}

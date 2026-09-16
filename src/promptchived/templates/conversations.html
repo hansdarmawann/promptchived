@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Percakapan · Promptchived{% endblock %}
+{% block content %}
+<div class="page-head"><div><p class="eyebrow">Arsip</p><h1>Percakapan</h1></div><a class="button" href="/search">Cari arsip</a></div>
+<section class="conversation-list">
+{% for conversation in items %}
+  <a class="conversation-row" href="/conversations/{{ conversation.id }}">
+    <div><h2>{{ conversation.title }}</h2><p>{{ conversation.provider_conversation_id or 'Tanpa ID sumber' }}</p></div>
+    <time>{{ (conversation.source_updated_at or conversation.source_created_at)|localtime or 'Tanggal tidak tersedia' }}</time>
+  </a>
+{% else %}<div class="empty">Belum ada percakapan. Daftarkan sumber dan jalankan worker impor.</div>{% endfor %}
+</section>
+<nav class="pagination">
+  {% if page > 1 %}<a href="?page={{ page - 1 }}">← Sebelumnya</a>{% endif %}
+  <span>Halaman {{ page }} dari {{ pages }}</span>
+  {% if page < pages %}<a href="?page={{ page + 1 }}">Berikutnya →</a>{% endif %}
+</nav>
+{% endblock %}

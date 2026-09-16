@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ conversation.title }} · Promptchived{% endblock %}
+{% block content %}
+<div class="page-head conversation-heading">
+  <div><p class="eyebrow">{{ conversation.source.provider }}</p><h1>{{ conversation.title }}</h1><p class="muted">{{ messages|length }} pesan ditampilkan</p></div>
+  <a class="button secondary" href="?branches={{ 'false' if branches else 'true' }}">{{ 'Cabang aktif' if branches else 'Tampilkan semua cabang' }}</a>
+</div>
+<section class="thread">
+{% for message in messages %}
+  <article id="message-{{ message.id }}" class="message {{ message.role }} {% if focus == message.id %}focused{% endif %}">
+    <header><span>{{ 'Anda' if message.role == 'user' else message.role|capitalize }}</span><time>{{ message.source_created_at|localtime }}</time>{% if not message.is_current_path %}<b>Cabang alternatif</b>{% endif %}</header>
+    <div class="message-body">{{ message.body|markdown|safe }}</div>
+    {% if message.attachments %}<div class="attachments">
+      {% for file in message.attachments %}
+        <a href="/api/attachments/{{ file.id }}" target="_blank">
+          {% if file.mime_type and file.mime_type.startswith('image/') %}<img src="/api/attachments/{{ file.id }}" alt="{{ file.original_name }}">{% endif %}
+          <span>{{ file.original_name }}</span>
+        </a>
+      {% endfor %}
+    </div>{% endif %}
+    {% if branches %}<small class="node">parent: {{ message.parent_source_id or 'root' }}</small>{% endif %}
+  </article>
+{% endfor %}
+</section>
+{% endblock %}
