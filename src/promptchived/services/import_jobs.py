@@ -166,6 +166,8 @@ def _upsert_message(
         )
     if changed:
         message.chunks.clear()
+        # Flush orphan deletes before inserting positions 0..N again.
+        session.flush()
         for position, (body, token_count) in enumerate(cheap_chunks(message.body)):
             message.chunks.append(
                 SearchChunk(
@@ -304,6 +306,9 @@ def embed_pending(
         for message in messages:
             exact_chunks = service.tokenizer_chunks(message.body)
             message.chunks.clear()
+            # The unique (message_id, position) constraint requires old rows
+            # to be deleted before replacement chunks are inserted.
+            session.flush()
             for position, (body, token_count) in enumerate(exact_chunks):
                 message.chunks.append(
                     SearchChunk(
