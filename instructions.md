@@ -40,3 +40,4 @@ Promptchived is a single-user web application that runs on `127.0.0.1`. It archi
 - `src/promptchived/main.py`: Jinja pages and the FastAPI API.
 - `migrations`: the PostgreSQL schema and pgvector extension.
 - `tests`: anonymized fixtures and important behavior regressions.
+- `Dockerfile` and `compose.yml`: container image and the local web, worker, migration, PostgreSQL 18, and pgvector stack.

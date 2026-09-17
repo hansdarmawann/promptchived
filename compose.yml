@@ -1,0 +1,75 @@
+name: promptchived
+
+x-app: &app
+  build:
+    context: .
+  environment:
+    PROMPTCHIVED_DATABASE_URL: postgresql+psycopg://${PROMPTCHIVED_DB_USER:-promptchived}:${PROMPTCHIVED_DB_PASSWORD:-promptchived-local}@database:5432/${PROMPTCHIVED_DB_NAME:-promptchived}
+    PROMPTCHIVED_HOST: 0.0.0.0
+    PROMPTCHIVED_PORT: 8765
+    PROMPTCHIVED_TIMEZONE: ${PROMPTCHIVED_TIMEZONE:-Asia/Jakarta}
+    PROMPTCHIVED_EMBEDDING_MODEL: intfloat/multilingual-e5-small
+    PROMPTCHIVED_MODEL_CACHE: /app/.models
+    PROMPTCHIVED_EMBEDDING_DEVICE: cpu
+  volumes:
+    - promptchived-models:/app/.models
+    - type: bind
+      source: ${PROMPTCHIVED_ARCHIVE_PATH:-./archives}
+      target: /archives
+      read_only: true
+
+services:
+  database:
+    image: pgvector/pgvector:0.8.6-pg18-trixie
+    environment:
+      POSTGRES_DB: ${PROMPTCHIVED_DB_NAME:-promptchived}
+      POSTGRES_USER: ${PROMPTCHIVED_DB_USER:-promptchived}
+      POSTGRES_PASSWORD: ${PROMPTCHIVED_DB_PASSWORD:-promptchived-local}
+    volumes:
+      # PostgreSQL 18 stores PGDATA in a versioned subdirectory here.
+      - promptchived-database:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    <<: *app
+    command: ["promptchived", "migrate"]
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    <<: *app
+    command: ["promptchived", "serve"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:8765:8765"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/health', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  worker:
+    <<: *app
+    command: ["promptchived", "worker"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  promptchived-database:
+  promptchived-models:

@@ -1,4 +1,5 @@
 .env
+.env.docker
 .venv/
 __pycache__/
 *.py[cod]
@@ -12,6 +13,10 @@ htmlcov/
 dist/
 build/
 *.egg-info/
+
+# Local directory used by the default Docker archive mount
+archives/*
+!archives/.gitkeep
 
 # Private export path manifests
 1.txt

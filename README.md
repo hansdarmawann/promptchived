@@ -86,6 +86,62 @@ promptchived serve --reload
 
 Open <http://127.0.0.1:8765>. The application binds only to the loopback interface and has no login because it is intended for a single user on a local computer. API documentation is available at <http://127.0.0.1:8765/docs>.
 
+## Docker Compose
+
+Docker Compose can run the web application, worker, migrations, PostgreSQL 18, and pgvector as one local stack. PostgreSQL is only available to the other containers; the web interface remains bound to `127.0.0.1:8765`.
+
+Create the Docker environment file:
+
+```powershell
+Copy-Item .env.docker.example .env.docker
+```
+
+Edit `.env.docker`. Set a database password containing URL-safe characters and point `PROMPTCHIVED_ARCHIVE_PATH` to the common parent of the ChatGPT and Gemini export folders. Use forward slashes for a Windows path:
+
+```dotenv
+PROMPTCHIVED_DB_PASSWORD=replace-this-password
+PROMPTCHIVED_ARCHIVE_PATH=G:/hadama10/backups/account-name
+```
+
+Start the complete stack:
+
+```powershell
+docker compose --env-file .env.docker up --build -d
+docker compose --env-file .env.docker ps
+```
+
+Open <http://127.0.0.1:8765>. Register source folders using their container paths, such as `/archives/chatgpt` and `/archives/gemini`. The host archive mount is read-only. The first semantic search or embedding job downloads the model into the shared `promptchived-models` volume.
+
+Useful commands:
+
+```powershell
+docker compose --env-file .env.docker logs -f web worker
+docker compose --env-file .env.docker restart web worker
+docker compose --env-file .env.docker down
+```
+
+`docker compose down` keeps the database and model volumes. Adding `--volumes` deletes the containerized database and model cache.
+
+### Move the existing native database into Docker
+
+Create a dump from the current Windows PostgreSQL instance before starting the complete stack:
+
+```powershell
+& 'C:\Program Files\PostgreSQL\18\bin\pg_dump.exe' -U promptchived -Fc promptchived -f promptchived.dump
+docker compose --env-file .env.docker up -d database
+docker compose --env-file .env.docker cp promptchived.dump database:/tmp/promptchived.dump
+docker compose --env-file .env.docker exec database pg_restore -U promptchived -d promptchived --clean --if-exists /tmp/promptchived.dump
+```
+
+Update the restored Windows source paths to their container paths, then start the remaining services:
+
+```powershell
+docker compose --env-file .env.docker exec database psql -U promptchived -d promptchived -c "UPDATE sources SET root_path = '/archives/chatgpt' WHERE provider = 'chatgpt'; UPDATE sources SET root_path = '/archives/gemini' WHERE provider = 'gemini';"
+docker compose --env-file .env.docker up -d
+```
+
+The native PostgreSQL service can remain installed because the Compose database does not publish port `5432` to Windows.
+
 ## Testing
 
 ```powershell
@@ -96,7 +152,7 @@ To run the PostgreSQL idempotency test, create a separate test database whose na
 
 ## CI and releases
 
-GitHub Actions runs compilation, tests, and distribution builds for every pull request and push to `main`. PostgreSQL integration tests remain skipped unless a dedicated test database is configured.
+GitHub Actions runs compilation, tests, Docker Compose validation, and distribution builds for every pull request and push to `main`. PostgreSQL integration tests remain skipped unless a dedicated test database is configured.
 
 To publish a GitHub Release, update `project.version` in `pyproject.toml`, commit the change, then create and push a matching version tag:
 

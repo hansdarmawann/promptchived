@@ -21,7 +21,7 @@ def test_search_form_accepts_empty_optional_filters():
     with patch("promptchived.main.search", return_value=empty_search_result()) as search_mock:
         response = client.get(
             "/search",
-            params={"q": "overalls", "mode": "hybrid", "provider": "", "role": ""},
+            params={"q": "cats", "mode": "hybrid", "provider": "", "role": ""},
         )
 
     assert response.status_code == 200
