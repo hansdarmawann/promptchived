@@ -39,6 +39,9 @@ class EmbeddingService:
                 device=self.settings.embedding_device,
                 cache_folder=str(self.settings.model_cache),
                 local_files_only=local_model is not None,
+                # Avoid meta-tensor loading, which is incompatible with some
+                # Windows CPU combinations of PyTorch and sentence-transformers.
+                model_kwargs={"low_cpu_mem_usage": False},
             )
         return self._model
 

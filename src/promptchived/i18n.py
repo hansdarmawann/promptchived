@@ -8,7 +8,7 @@ SUPPORTED_LANGUAGES = {"en", "id"}
 
 TRANSLATIONS = {
     "en": {
-        "nav.conversations": "Conversations",
+        "nav.conversations": "Conversation",
         "nav.search": "Search",
         "language.label": "Language",
         "footer.local": "Local archive · your data stays on your computer",
