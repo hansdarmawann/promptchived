@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "promptchived"
 version = "0.1.0"
-description = "Arsip lokal dan pencarian hybrid untuk ekspor ChatGPT dan Gemini"
+description = "Local archive and hybrid search for ChatGPT and Gemini exports"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
@@ -41,4 +41,3 @@ packages = ["src/promptchived"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
-

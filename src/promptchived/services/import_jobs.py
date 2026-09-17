@@ -35,7 +35,7 @@ GEMINI_FILE = re.compile(r"^MyActivity(?: \(\d+\))?\.html$", re.I)
 def discover_files(source: Source) -> list[Path]:
     root = Path(source.root_path).resolve()
     if not root.is_dir():
-        raise FileNotFoundError(f"Folder sumber tidak ditemukan: {root}")
+        raise FileNotFoundError(f"Source folder not found: {root}")
     pattern = CHATGPT_FILE if source.provider == "chatgpt" else GEMINI_FILE
     files = [path for path in root.rglob("*") if path.is_file() and pattern.match(path.name)]
     return sorted(files, key=lambda path: (path.stat().st_mtime_ns, str(path).lower()))
@@ -241,7 +241,7 @@ def _parse_file(source: Source, path: Path) -> list[NormalizedConversation]:
         return parse_chatgpt_file(path, root)
     if source.provider == "gemini":
         return parse_gemini_file(path, root)
-    raise ValueError(f"Provider tidak didukung: {source.provider}")
+    raise ValueError(f"Unsupported provider: {source.provider}")
 
 
 def _import_path(session: Session, source: Source, path: Path) -> tuple[int, int, bool]:
@@ -344,7 +344,7 @@ def embed_pending(
         return completed, None
     except Exception as exc:  # The text import remains usable if model setup fails.
         session.rollback()
-        return 0, f"Embedding belum selesai: {exc}"
+        return 0, f"Embedding did not finish: {exc}"
 
 
 def _record_file_failure(session: Session, source: Source, path: Path, error: str) -> None:
@@ -382,7 +382,7 @@ def process_job(job_id: uuid.UUID) -> None:
         source = session.get(Source, job.source_id)
         if source is None:
             job.status = JobStatus.failed.value
-            job.last_error = "Sumber tidak ditemukan"
+            job.last_error = "Source not found"
             session.commit()
             return
         try:

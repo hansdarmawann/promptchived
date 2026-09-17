@@ -1,17 +1,19 @@
 # Promptchived
 
-Promptchived adalah aplikasi web pribadi lokal untuk membaca dan mencari ekspor ChatGPT dan Gemini. Data disimpan di PostgreSQL, pencarian kata kunci memakai Full Text Search, dan pencarian makna memakai embedding lokal `intfloat/multilingual-e5-small` dengan pgvector.
+Promptchived is a private local web application for reading and searching ChatGPT and Gemini exports. It stores data in PostgreSQL, uses PostgreSQL Full Text Search for keyword retrieval, and provides semantic search through local `intfloat/multilingual-e5-small` embeddings and pgvector.
 
-## Persyaratan
+The interface supports English and Indonesian. English is the default, and the selected language is remembered in the browser.
 
-- Windows 10/11 dan Python 3.12 x64
-- PostgreSQL 18 yang berjalan lokal
-- Visual Studio Build Tools dengan komponen **Desktop development with C++** untuk membangun pgvector
-- Ruang kosong untuk model embedding (diunduh satu kali ke `.models`)
+## Requirements
 
-## 1. Pasang pgvector pada PostgreSQL 18
+- Windows 10/11 and 64-bit Python 3.12
+- PostgreSQL 18 running locally
+- Visual Studio Build Tools with the **Desktop development with C++** workload for building pgvector
+- Free disk space for the embedding model, which is downloaded once into `.models`
 
-Buka **x64 Native Tools Command Prompt for VS** sebagai Administrator, lalu jalankan:
+## 1. Install pgvector for PostgreSQL 18
+
+Open **x64 Native Tools Command Prompt for VS** as Administrator, then run:
 
 ```bat
 set "PGROOT=C:\Program Files\PostgreSQL\18"
@@ -22,24 +24,24 @@ nmake /F Makefile.win
 nmake /F Makefile.win install
 ```
 
-Perintah terakhir menulis ke instalasi PostgreSQL sehingga memerlukan hak Administrator. Panduan resminya tersedia di <https://github.com/pgvector/pgvector#windows>.
+The final command writes to the PostgreSQL installation directory and therefore requires Administrator privileges. See the [official pgvector Windows instructions](https://github.com/pgvector/pgvector#windows) for additional details.
 
-## 2. Buat database dan environment
+## 2. Create the database and environment
 
-Masuk menggunakan akun administrator PostgreSQL. Ganti password pada contoh berikut:
+Connect with a PostgreSQL administrator account. Replace the password in this example:
 
 ```powershell
 & 'C:\Program Files\PostgreSQL\18\bin\psql.exe' -U postgres -d postgres
 ```
 
 ```sql
-CREATE ROLE promptchived LOGIN PASSWORD 'ganti-password-ini';
+CREATE ROLE promptchived LOGIN PASSWORD 'replace-this-password';
 CREATE DATABASE promptchived OWNER promptchived;
 \c promptchived
 CREATE EXTENSION vector;
 ```
 
-Lalu siapkan aplikasi:
+Set up the application:
 
 ```powershell
 py -3.12 -m venv .venv
@@ -49,49 +51,53 @@ pip install -e ".[dev]"
 Copy-Item .env.example .env
 ```
 
-Edit `.env`, terutama password `PROMPTCHIVED_DATABASE_URL`, kemudian jalankan `promptchived migrate`.
+Edit `.env`, especially the password in `PROMPTCHIVED_DATABASE_URL`, then run:
 
-## 3. Daftarkan dan impor ekspor
+```powershell
+promptchived migrate
+```
 
-`1.txt` serta `2.txt` pada repository ini adalah daftar lokasi file. Jadikan keduanya sumber awal, lalu antrekan pemindaian:
+## 3. Register and import exports
+
+The optional `1.txt` and `2.txt` manifests contain export file locations for the initial source registration. They are ignored by Git and are no longer needed after the sources have been registered in PostgreSQL.
 
 ```powershell
 promptchived bootstrap
 promptchived scan-all
 ```
 
-Anda juga dapat mendaftarkan folder langsung dari halaman utama. Provider ChatGPT mencari `conversations*.json`; provider Gemini mencari `MyActivity*.html`. File yang hash-nya tidak berubah dilewati.
+You can also register folders directly from the home page. The ChatGPT provider discovers `conversations*.json`; the Gemini provider discovers `MyActivity*.html`. Files with unchanged hashes are skipped.
 
-Jalankan worker dalam terminal terpisah:
+Run the worker in a separate terminal:
 
 ```powershell
 promptchived worker
 ```
 
-Impor teks disimpan lebih dahulu. Jika unduhan model gagal, full-text search tetap dapat dipakai dan pekerjaan ditandai `partial`; pindai ulang setelah model tersedia untuk melanjutkan embedding.
+Text is stored before embeddings are generated. If model setup fails, full-text search remains available and the job is marked `partial`. Scan the source again after the model becomes available to resume embedding generation.
 
-## 4. Jalankan web
+## 4. Run the web application
 
 ```powershell
 promptchived serve --reload
 ```
 
-Buka <http://127.0.0.1:8765>. Aplikasi hanya bind ke loopback dan tidak memiliki login karena ditujukan untuk satu pengguna di komputer lokal. Dokumentasi API berada di <http://127.0.0.1:8765/docs>.
+Open <http://127.0.0.1:8765>. The application binds only to the loopback interface and has no login because it is intended for a single user on a local computer. API documentation is available at <http://127.0.0.1:8765/docs>.
 
-## Pengujian
+## Testing
 
 ```powershell
 pytest
 ```
 
-Untuk tes idempotensi dengan PostgreSQL sungguhan, buat database pengujian terpisah yang namanya mengandung `test`, set `PROMPTCHIVED_TEST_DATABASE_URL`, lalu jalankan `pytest`. Tes memiliki guard agar tidak dapat diarahkan ke database aplikasi biasa.
+To run the PostgreSQL idempotency test, create a separate test database whose name contains `test`, set `PROMPTCHIVED_TEST_DATABASE_URL`, and run `pytest`. A guard prevents this test from targeting the regular application database.
 
-## Pencadangan
+## Backup and unavailable exports
 
-Teks, metadata, indeks, dan referensi lampiran berada di database; file lampiran tetap di folder ekspor asal. Cadangkan keduanya:
+Text, metadata, indexes, and attachment references are stored in PostgreSQL. Attachment files remain in their original export folders. Back up both:
 
 ```powershell
 & 'C:\Program Files\PostgreSQL\18\bin\pg_dump.exe' -U promptchived -Fc promptchived -f promptchived.dump
 ```
 
-Jika folder ekspor dipindahkan atau dihapus, teks tetap dapat dicari tetapi preview lampiran tidak tersedia.
+If an export folder is moved, disconnected, or deleted, imported text and search remain available. Attachment previews and rescanning require the original folder.

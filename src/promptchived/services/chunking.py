@@ -6,7 +6,7 @@ TOKEN_PATTERN = re.compile(r"\S+")
 def chunk_text(text: str, max_tokens: int = 400, overlap: int = 50) -> list[tuple[str, int]]:
     """Split text deterministically; the embedding worker may use the model tokenizer later."""
     if max_tokens <= 0 or overlap < 0 or overlap >= max_tokens:
-        raise ValueError("Konfigurasi chunk tidak valid")
+        raise ValueError("Invalid chunk configuration")
     matches = list(TOKEN_PATTERN.finditer(text))
     if not matches:
         return []
@@ -21,4 +21,3 @@ def chunk_text(text: str, max_tokens: int = 400, overlap: int = 50) -> list[tupl
             break
         start = end - overlap
     return output
-

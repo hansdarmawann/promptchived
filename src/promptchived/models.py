@@ -96,7 +96,7 @@ class Conversation(TimestampMixin, Base):
     source_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sources.id", ondelete="CASCADE"), index=True)
     provider_conversation_id: Mapped[str | None] = mapped_column(String(255))
     fingerprint: Mapped[str] = mapped_column(String(64))
-    title: Mapped[str] = mapped_column(Text, default="Tanpa judul")
+    title: Mapped[str] = mapped_column(Text, default="Untitled")
     source_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     source_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     current_node_source_id: Mapped[str | None] = mapped_column(String(255))

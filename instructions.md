@@ -1,42 +1,42 @@
-# Spesifikasi Promptchived v1
+# Promptchived v1 specification
 
-Promptchived adalah aplikasi web satu pengguna yang berjalan pada `127.0.0.1`. Aplikasi mengarsipkan ekspor ChatGPT dan Gemini ke PostgreSQL 18, mempertahankan pesan, cabang alternatif, metadata sumber, revisi, dan referensi lampiran.
+Promptchived is a single-user web application that runs on `127.0.0.1`. It archives ChatGPT and Gemini exports in PostgreSQL 18 while preserving messages, alternative branches, source metadata, revisions, and attachment references.
 
-## Perilaku utama
+## Core behavior
 
-1. Folder sumber didaftarkan sebagai `chatgpt` atau `gemini`.
-2. Tombol **Pindai ulang** membuat pekerjaan `pending`; `promptchived worker` mengambil pekerjaan dengan row lock `SKIP LOCKED`.
-3. Setiap file dihitung SHA-256. File `imported` dengan hash sama tidak diproses ulang.
-4. Percakapan dan pesan di-upsert memakai ID provider serta fingerprint stabil sebagai fallback. Isi lama dicatat sebagai revisi saat berubah.
-5. Teks langsung dibuat menjadi chunk dan `tsvector`, sehingga full-text search tersedia sebelum embedding selesai.
-6. Worker mengunduh `intfloat/multilingual-e5-small` ke cache lokal, lalu menyimpan embedding 384 dimensi yang dinormalisasi.
+1. A source folder is registered as either `chatgpt` or `gemini`.
+2. The **Scan again** button creates a `pending` job. `promptchived worker` claims jobs through a `SKIP LOCKED` row lock.
+3. Every file receives a SHA-256 hash. An `imported` file with the same hash is not processed again.
+4. Conversations and messages are upserted using provider IDs, with stable fingerprints as a fallback. When content changes, the previous content is retained as a revision.
+5. Text is immediately split into chunks and indexed as `tsvector`, making full-text search available before embedding generation finishes.
+6. The worker downloads `intfloat/multilingual-e5-small` into a local cache and stores normalized 384-dimensional embeddings.
 
-## Parser sumber
+## Source parsers
 
-- ChatGPT membaca shard `conversations*.json`, `mapping`, hubungan `parent`, `current_node`, bagian teks/multimodal, dan pemetaan nama aset. Semua cabang disimpan dan jalur `current_node` ke root ditandai aktif.
-- Gemini membaca setiap `div.outer-cell` pada `MyActivity*.html`, lalu memisahkan prompt, jawaban, dan waktu. Tautan `/app/{id}` menjadi ID percakapan; entri tanpa ID menjadi percakapan tersendiri.
-- Tautan media relatif diselesaikan terhadap file ekspor dan wajib berada di dalam root sumber.
+- The ChatGPT parser reads `conversations*.json` shards, `mapping`, `parent` relationships, `current_node`, text and multimodal parts, and asset filename mappings. It stores every branch and marks the path from `current_node` to the root as active.
+- The Gemini parser reads each `div.outer-cell` in `MyActivity*.html`, then separates the prompt, answer, and timestamp. An `/app/{id}` link supplies the conversation ID; an entry without an ID becomes a standalone conversation.
+- Relative media links are resolved against the export file and must remain inside the registered source root.
 
-## Pencarian
+## Search
 
-- Full-text: `pg_catalog.simple`, GIN, `websearch_to_tsquery`, `ts_rank_cd`, judul berbobot A dan isi B.
-- Semantic: prefix E5 `query:` dan `passage:`, cosine distance exact pada `vector(384)`.
-- Hybrid: maksimal 100 kandidat per jalur digabung per pesan dengan Reciprocal Rank Fusion `k=60`.
-- Filter sumber, provider, peran, dan tanggal diterapkan sebelum pemeringkatan.
-- Pesan panjang dipotong sekitar 400 token dengan overlap 50; teks asli tetap utuh.
+- Full text: `pg_catalog.simple`, a GIN index, `websearch_to_tsquery`, and `ts_rank_cd`, with titles weighted A and bodies weighted B.
+- Semantic: E5 `query:` and `passage:` prefixes with exact cosine distance over `vector(384)`.
+- Hybrid: up to 100 candidates from each retrieval path are combined per message using Reciprocal Rank Fusion with `k=60`.
+- Source, provider, role, and date filters are applied before ranking.
+- Long messages are split at approximately 400 tokens with a 50-token overlap while preserving the complete original text.
 
-## Keamanan dan batasan
+## Security and limitations
 
-- HTML/Markdown disanitasi dan skrip dari ekspor tidak dijalankan.
-- Endpoint lampiran hanya melayani path di bawah folder sumber terdaftar.
-- Tidak ada OCR, transkripsi baru, ekstraksi isi dokumen, upload ZIP, login, sinkronisasi otomatis, atau jawaban generatif pada v1.
-- Waktu ditampilkan untuk `Asia/Jakarta` dan disimpan sebagai `timestamptz` UTC.
+- Rendered HTML and Markdown are sanitized, and scripts from exports are never executed.
+- The attachment endpoint only serves paths located under a registered source folder.
+- Version 1 does not provide OCR, new transcription, document content extraction, ZIP upload, login, automatic synchronization, or generative answers.
+- Timestamps are displayed in `Asia/Jakarta` and stored as UTC `timestamptz` values.
 
-## Struktur kode
+## Code structure
 
-- `src/promptchived/importers`: normalisasi format ekspor.
-- `src/promptchived/services/import_jobs.py`: antrean, deduplikasi, upsert, dan embedding.
-- `src/promptchived/services/search.py`: full-text, semantic, dan RRF.
-- `src/promptchived/main.py`: halaman Jinja serta API FastAPI.
-- `migrations`: skema PostgreSQL dan ekstensi pgvector.
-- `tests`: fixture anonim dan regresi perilaku penting.
+- `src/promptchived/importers`: export format normalization.
+- `src/promptchived/services/import_jobs.py`: queueing, deduplication, upserts, and embedding generation.
+- `src/promptchived/services/search.py`: full-text, semantic, and RRF retrieval.
+- `src/promptchived/main.py`: Jinja pages and the FastAPI API.
+- `migrations`: the PostgreSQL schema and pgvector extension.
+- `tests`: anonymized fixtures and important behavior regressions.

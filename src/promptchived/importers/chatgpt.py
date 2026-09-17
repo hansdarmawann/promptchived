@@ -94,7 +94,7 @@ def _active_nodes(mapping: dict[str, Any], current_node: str | None) -> set[str]
 def parse_chatgpt_file(path: Path, source_root: Path) -> list[NormalizedConversation]:
     data = json.loads(path.read_text(encoding="utf-8-sig"))
     if not isinstance(data, list):
-        raise ValueError(f"Akar JSON harus berupa daftar: {path}")
+        raise ValueError(f"The JSON root must be a list: {path}")
     asset_map = _load_asset_map(path.parent)
     output: list[NormalizedConversation] = []
 
@@ -139,7 +139,7 @@ def parse_chatgpt_file(path: Path, source_root: Path) -> list[NormalizedConversa
                 )
             )
         conversation_id = raw_conversation.get("conversation_id") or raw_conversation.get("id")
-        title = str(raw_conversation.get("title") or "Tanpa judul")
+        title = str(raw_conversation.get("title") or "Untitled")
         created_at = parse_timestamp(raw_conversation.get("create_time"))
         updated_at = parse_timestamp(raw_conversation.get("update_time"))
         fingerprint = stable_hash("chatgpt", conversation_id or title, created_at)
@@ -160,4 +160,3 @@ def parse_chatgpt_file(path: Path, source_root: Path) -> list[NormalizedConversa
             )
         )
     return output
-

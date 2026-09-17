@@ -146,7 +146,7 @@ def search(
             vector = EmbeddingService().encode_query(query)
             semantic = semantic_candidates(session, parameters, vector, settings.search_candidates)
         else:
-            notice = "Embedding belum tersedia; hasil kata kunci ditampilkan."
+            notice = "Embeddings are unavailable; keyword results are shown."
 
     if mode == "fulltext" or (mode == "hybrid" and not semantic):
         ranked = _collapse(lexical)

@@ -13,6 +13,6 @@ dist/
 build/
 *.egg-info/
 
-# Daftar path ekspor pribadi
+# Private export path manifests
 1.txt
 2.txt

@@ -22,7 +22,7 @@ from promptchived.services.search import search
 
 
 TEST_URL = os.getenv("PROMPTCHIVED_TEST_DATABASE_URL")
-pytestmark = pytest.mark.skipif(not TEST_URL, reason="database integration tidak dikonfigurasi")
+pytestmark = pytest.mark.skipif(not TEST_URL, reason="database integration is not configured")
 
 
 def test_reimport_is_idempotent(tmp_path):

@@ -91,7 +91,7 @@ def create_source_form(
 def scan_source_form(source_id: uuid.UUID, db: Session = Depends(get_db)):
     source = db.get(Source, source_id)
     if not source:
-        raise HTTPException(404, "Sumber tidak ditemukan")
+        raise HTTPException(404, "Source not found")
     enqueue_scan(db, source)
     return RedirectResponse("/", status_code=303)
 
@@ -132,7 +132,7 @@ def conversation_page(
         .where(Conversation.id == conversation_id)
     )
     if not conversation:
-        raise HTTPException(404, "Percakapan tidak ditemukan")
+        raise HTTPException(404, "Conversation not found")
     messages = conversation.messages if branches else [m for m in conversation.messages if m.is_current_path]
     return render_template(
         request,
@@ -165,10 +165,10 @@ def search_page(
 def create_source(payload: SourceCreate, db: Session = Depends(get_db)):
     root = Path(payload.root_path).expanduser().resolve()
     if not root.is_dir():
-        raise HTTPException(422, "Folder sumber tidak ditemukan")
+        raise HTTPException(422, "Source folder not found")
     existing = db.scalar(select(Source).where(Source.root_path == str(root)))
     if existing:
-        raise HTTPException(409, "Folder ini sudah terdaftar")
+        raise HTTPException(409, "This folder is already registered")
     source = Source(name=payload.name, provider=payload.provider, root_path=str(root))
     db.add(source)
     db.commit()
@@ -180,7 +180,7 @@ def create_source(payload: SourceCreate, db: Session = Depends(get_db)):
 def scan_source(source_id: uuid.UUID, db: Session = Depends(get_db)):
     source = db.get(Source, source_id)
     if not source:
-        raise HTTPException(404, "Sumber tidak ditemukan")
+        raise HTTPException(404, "Source not found")
     return enqueue_scan(db, source)
 
 
@@ -188,7 +188,7 @@ def scan_source(source_id: uuid.UUID, db: Session = Depends(get_db)):
 def get_import(job_id: uuid.UUID, db: Session = Depends(get_db)):
     job = db.get(ImportJob, job_id)
     if not job:
-        raise HTTPException(404, "Pekerjaan impor tidak ditemukan")
+        raise HTTPException(404, "Import job not found")
     return job
 
 
@@ -226,7 +226,7 @@ def get_conversation(conversation_id: uuid.UUID, db: Session = Depends(get_db)):
         .where(Conversation.id == conversation_id)
     )
     if not conversation:
-        raise HTTPException(404, "Percakapan tidak ditemukan")
+        raise HTTPException(404, "Conversation not found")
     return conversation
 
 
@@ -266,13 +266,13 @@ def get_attachment(
         .where(Attachment.id == attachment_id)
     )
     if not attachment:
-        raise HTTPException(404, "Lampiran tidak ditemukan")
+        raise HTTPException(404, "Attachment not found")
     try:
         path = resolve_attachment(
             attachment.message.conversation.source.root_path, attachment.relative_path
         )
     except (FileNotFoundError, UnsafeAttachmentPath):
-        raise HTTPException(404, "File lampiran tidak tersedia") from None
+        raise HTTPException(404, "Attachment file is unavailable") from None
     return FileResponse(
         path,
         media_type=attachment.mime_type or "application/octet-stream",

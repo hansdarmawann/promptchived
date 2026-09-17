@@ -11,7 +11,7 @@ def resolve_attachment(root_path: str, relative_path: str) -> Path:
     try:
         candidate.relative_to(root)
     except ValueError as exc:
-        raise UnsafeAttachmentPath("Lampiran berada di luar folder sumber") from exc
+        raise UnsafeAttachmentPath("The attachment is outside the source folder") from exc
     if not candidate.is_file():
         raise FileNotFoundError(candidate)
     return candidate

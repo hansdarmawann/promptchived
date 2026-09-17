@@ -12,7 +12,7 @@ def test_chatgpt_parser_preserves_branches_and_attachment(tmp_path):
     export = [
         {
             "id": "conversation-1",
-            "title": "Percakapan bercabang",
+            "title": "Branched conversation",
             "create_time": 1_700_000_000,
             "update_time": 1_700_000_010,
             "current_node": "answer-b",
@@ -20,15 +20,15 @@ def test_chatgpt_parser_preserves_branches_and_attachment(tmp_path):
                 "root": {"id": "root", "parent": None, "message": None},
                 "question": {
                     "id": "question", "parent": "root",
-                    "message": {"id": "message-q", "author": {"role": "user"}, "create_time": 1_700_000_001, "content": {"content_type": "text", "parts": ["Pertanyaan"]}, "metadata": {}},
+                    "message": {"id": "message-q", "author": {"role": "user"}, "create_time": 1_700_000_001, "content": {"content_type": "text", "parts": ["Question"]}, "metadata": {}},
                 },
                 "answer-a": {
                     "id": "answer-a", "parent": "question",
-                    "message": {"id": "message-a", "author": {"role": "assistant"}, "create_time": 1_700_000_002, "content": {"content_type": "text", "parts": ["Jawaban lama"]}, "metadata": {}},
+                    "message": {"id": "message-a", "author": {"role": "assistant"}, "create_time": 1_700_000_002, "content": {"content_type": "text", "parts": ["Previous answer"]}, "metadata": {}},
                 },
                 "answer-b": {
                     "id": "answer-b", "parent": "question",
-                    "message": {"id": "message-b", "author": {"role": "assistant"}, "create_time": 1_700_000_003, "content": {"content_type": "multimodal_text", "parts": ["Jawaban aktif", {"asset_pointer": "file-service://file-1.dat", "mime_type": "image/png"}]}, "metadata": {}},
+                    "message": {"id": "message-b", "author": {"role": "assistant"}, "create_time": 1_700_000_003, "content": {"content_type": "multimodal_text", "parts": ["Active answer", {"asset_pointer": "file-service://file-1.dat", "mime_type": "image/png"}]}, "metadata": {}},
                 },
             },
         }
@@ -44,4 +44,3 @@ def test_chatgpt_parser_preserves_branches_and_attachment(tmp_path):
     active = next(m for m in conversation.messages if m.source_id == "message-b")
     assert active.is_current_path is True
     assert active.attachments[0].relative_path == "image.png"
-

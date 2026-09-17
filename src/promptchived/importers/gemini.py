@@ -91,7 +91,7 @@ def parse_gemini_file(path: Path, source_root: Path) -> list[NormalizedConversat
         grouped.setdefault(identity, []).append(
             (prompt, answer, timestamp, _attachments(block, path, source_root), index)
         )
-        titles.setdefault(identity, (prompt[:120] if prompt else "Aktivitas Gemini"))
+        titles.setdefault(identity, (prompt[:120] if prompt else "Gemini activity"))
 
     conversations: list[NormalizedConversation] = []
     for identity, activities in grouped.items():
@@ -132,7 +132,7 @@ def parse_gemini_file(path: Path, source_root: Path) -> list[NormalizedConversat
             NormalizedConversation(
                 source_id=provider_id,
                 fingerprint=fingerprint,
-                title=titles[identity] or "Aktivitas Gemini",
+                title=titles[identity] or "Gemini activity",
                 created_at=min(timestamps) if timestamps else None,
                 updated_at=max(timestamps) if timestamps else None,
                 current_node_source_id=messages[-1].source_id if messages else None,
