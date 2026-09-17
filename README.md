@@ -1,5 +1,7 @@
 # Promptchived
 
+[![CI](https://github.com/hansdarmawann/promptchived/actions/workflows/ci.yml/badge.svg)](https://github.com/hansdarmawann/promptchived/actions/workflows/ci.yml)
+
 Promptchived is a private local web application for reading and searching ChatGPT and Gemini exports. It stores data in PostgreSQL, uses PostgreSQL Full Text Search for keyword retrieval, and provides semantic search through local `intfloat/multilingual-e5-small` embeddings and pgvector.
 
 The interface supports English and Indonesian. English is the default, and the selected language is remembered in the browser.
@@ -91,6 +93,19 @@ pytest
 ```
 
 To run the PostgreSQL idempotency test, create a separate test database whose name contains `test`, set `PROMPTCHIVED_TEST_DATABASE_URL`, and run `pytest`. A guard prevents this test from targeting the regular application database.
+
+## CI and releases
+
+GitHub Actions runs compilation, tests, and distribution builds for every pull request and push to `main`. PostgreSQL integration tests remain skipped unless a dedicated test database is configured.
+
+To publish a GitHub Release, update `project.version` in `pyproject.toml`, commit the change, then create and push a matching version tag:
+
+```powershell
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The release workflow verifies that the tag matches `project.version`, builds the wheel and source distribution, and attaches both files to the generated GitHub Release.
 
 ## Backup and unavailable exports
 
