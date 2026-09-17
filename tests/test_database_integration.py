@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from promptchived.models import Conversation, Message, Source
 from promptchived.services.import_jobs import _import_path
+from promptchived.services.search import search
 
 
 TEST_URL = os.getenv("PROMPTCHIVED_TEST_DATABASE_URL")
@@ -69,8 +70,9 @@ def test_reimport_is_idempotent(tmp_path):
             assert second == (0, 0, True)
             assert session.scalar(select(func.count()).select_from(Conversation)) == 1
             assert session.scalar(select(func.count()).select_from(Message)) == 1
+            result = search(session, "hello", mode="fulltext")
+            assert len(result["items"]) == 1
     finally:
         transaction.rollback()
         connection.close()
         engine.dispose()
-

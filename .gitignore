@@ -3,9 +3,16 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.pytest-tmp/
+pytest-of-*/
+.codex-pytest-base-*/
+.models/
 .coverage
 htmlcov/
 dist/
 build/
 *.egg-info/
 
+# Daftar path ekspor pribadi
+1.txt
+2.txt

@@ -1,50 +1,49 @@
 {% extends "base.html" %}
-{% block title %}Sumber · Promptchived{% endblock %}
+{% block title %}{{ t('home.title') }}{% endblock %}
 {% block content %}
 <section class="hero">
-  <p class="eyebrow">Pusat arsip AI pribadi</p>
-  <h1>Riwayat Anda, bisa ditemukan kembali.</h1>
-  <p>Daftarkan folder ekspor ChatGPT atau Gemini. Worker akan mengimpor teks, lampiran, dan indeks pencariannya.</p>
+  <p class="eyebrow">{{ t('home.eyebrow') }}</p>
+  <h1>{{ t('home.heading') }}</h1>
+  <p>{{ t('home.intro') }}</p>
 </section>
 
 <div class="layout">
   <section class="panel">
-    <h2>Tambah sumber</h2>
+    <h2>{{ t('home.add_source') }}</h2>
     <form action="/sources" method="post" class="stack">
-      <label>Nama <input name="name" placeholder="ChatGPT pribadi" required></label>
-      <label>Provider
+      <label>{{ t('home.name') }} <input name="name" placeholder="{{ t('home.name_placeholder') }}" required></label>
+      <label>{{ t('home.provider') }}
         <select name="provider"><option value="chatgpt">ChatGPT</option><option value="gemini">Gemini</option></select>
       </label>
-      <label>Folder ekspor <input name="root_path" placeholder="G:\backups\chatgpt" required></label>
-      <button type="submit">Daftarkan folder</button>
+      <label>{{ t('home.export_folder') }} <input name="root_path" placeholder="G:\backups\chatgpt" required></label>
+      <button type="submit">{{ t('home.register') }}</button>
     </form>
   </section>
   <section class="panel">
-    <h2>Sumber terdaftar</h2>
+    <h2>{{ t('home.registered_sources') }}</h2>
     {% if sources %}
       <div class="card-list">
       {% for source in sources %}
         <article class="source-card">
           <div><span class="badge {{ source.provider }}">{{ source.provider }}</span><h3>{{ source.name }}</h3></div>
           <p class="path">{{ source.root_path }}</p>
-          <form action="/sources/{{ source.id }}/scan" method="post"><button type="submit" class="secondary">Pindai ulang</button></form>
+          <form action="/sources/{{ source.id }}/scan" method="post"><button type="submit" class="secondary">{{ t('home.rescan') }}</button></form>
         </article>
       {% endfor %}
       </div>
-    {% else %}<p class="muted">Belum ada sumber.</p>{% endif %}
+    {% else %}<p class="muted">{{ t('home.no_sources') }}</p>{% endif %}
   </section>
 </div>
 
 <section class="panel jobs">
-  <div class="section-head"><h2>Aktivitas impor</h2><a href="/">Muat ulang</a></div>
+  <div class="section-head"><h2>{{ t('home.import_activity') }}</h2><a href="/">{{ t('home.refresh') }}</a></div>
   {% if jobs %}
-  <table><thead><tr><th>Status</th><th>File</th><th>Percakapan</th><th>Pesan baru</th><th>Keterangan</th></tr></thead>
+  <table><thead><tr><th>{{ t('home.status') }}</th><th>{{ t('home.files') }}</th><th>{{ t('home.conversations') }}</th><th>{{ t('home.new_messages') }}</th><th>{{ t('home.details') }}</th></tr></thead>
   <tbody>{% for job in jobs %}<tr>
-    <td><span class="status {{ job.status }}">{{ job.status }}</span></td>
+    <td><span class="status {{ job.status }}">{{ t('status.' ~ job.status) }}</span></td>
     <td>{{ job.files_processed }}/{{ job.files_total }}</td><td>{{ job.conversations_processed }}</td><td>{{ job.messages_processed }}</td>
     <td class="error">{{ job.last_error or '—' }}</td>
   </tr>{% endfor %}</tbody></table>
-  {% else %}<p class="muted">Belum ada pekerjaan impor. Jalankan worker setelah menekan “Pindai ulang”.</p>{% endif %}
+  {% else %}<p class="muted">{{ t('home.no_jobs') }}</p>{% endif %}
 </section>
 {% endblock %}
-

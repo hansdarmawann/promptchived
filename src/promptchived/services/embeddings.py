@@ -1,7 +1,23 @@
 from collections.abc import Iterable
+from pathlib import Path
 
 from .chunking import chunk_text
 from ..config import get_settings
+
+
+def cached_model_path(cache_root: Path, model_name: str) -> Path | None:
+    model_cache = cache_root / f"models--{model_name.replace('/', '--')}"
+    main_ref = model_cache / "refs" / "main"
+    if not main_ref.is_file():
+        return None
+    revision = main_ref.read_text(encoding="utf-8").strip()
+    snapshot = (model_cache / "snapshots" / revision).resolve()
+    snapshots_root = (model_cache / "snapshots").resolve()
+    if not snapshot.is_relative_to(snapshots_root):
+        return None
+    if (snapshot / "config.json").is_file() and (snapshot / "modules.json").is_file():
+        return snapshot
+    return None
 
 
 class EmbeddingService:
@@ -15,10 +31,14 @@ class EmbeddingService:
             from sentence_transformers import SentenceTransformer
 
             self.settings.model_cache.mkdir(parents=True, exist_ok=True)
+            local_model = cached_model_path(
+                self.settings.model_cache, self.settings.embedding_model
+            )
             self._model = SentenceTransformer(
-                self.settings.embedding_model,
+                str(local_model) if local_model else self.settings.embedding_model,
                 device=self.settings.embedding_device,
                 cache_folder=str(self.settings.model_cache),
+                local_files_only=local_model is not None,
             )
         return self._model
 
@@ -42,17 +62,19 @@ class EmbeddingService:
 
     def tokenizer_chunks(self, text: str) -> list[tuple[str, int]]:
         tokenizer = self.model.tokenizer
-        token_ids = tokenizer.encode(text, add_special_tokens=False)
+        # Calling encode() on a long message emits a misleading max-length warning
+        # before we split it. Tokenize first, then decode bounded pieces.
+        tokens = tokenizer.tokenize(text, add_special_tokens=False)
         size = self.settings.chunk_tokens
         overlap = self.settings.chunk_overlap
-        if not token_ids:
+        if not tokens:
             return []
         output: list[tuple[str, int]] = []
         start = 0
-        while start < len(token_ids):
-            piece = token_ids[start : start + size]
-            output.append((tokenizer.decode(piece, skip_special_tokens=True), len(piece)))
-            if start + size >= len(token_ids):
+        while start < len(tokens):
+            piece = tokens[start : start + size]
+            output.append((tokenizer.convert_tokens_to_string(piece), len(piece)))
+            if start + size >= len(tokens):
                 break
             start += size - overlap
         return output
@@ -61,4 +83,3 @@ class EmbeddingService:
 def cheap_chunks(text: str) -> list[tuple[str, int]]:
     settings = get_settings()
     return chunk_text(text, settings.chunk_tokens, settings.chunk_overlap)
-

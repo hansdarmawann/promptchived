@@ -2,13 +2,13 @@
 {% block title %}{{ conversation.title }} · Promptchived{% endblock %}
 {% block content %}
 <div class="page-head conversation-heading">
-  <div><p class="eyebrow">{{ conversation.source.provider }}</p><h1>{{ conversation.title }}</h1><p class="muted">{{ messages|length }} pesan ditampilkan</p></div>
-  <a class="button secondary" href="?branches={{ 'false' if branches else 'true' }}">{{ 'Cabang aktif' if branches else 'Tampilkan semua cabang' }}</a>
+  <div><p class="eyebrow">{{ conversation.source.provider }}</p><h1>{{ conversation.title }}</h1><p class="muted">{{ t('conversation.message_count', count=messages|length) }}</p></div>
+  <a class="button secondary" href="?branches={{ 'false' if branches else 'true' }}">{{ t('conversation.active_branch') if branches else t('conversation.all_branches') }}</a>
 </div>
 <section class="thread">
 {% for message in messages %}
   <article id="message-{{ message.id }}" class="message {{ message.role }} {% if focus == message.id %}focused{% endif %}">
-    <header><span>{{ 'Anda' if message.role == 'user' else message.role|capitalize }}</span><time>{{ message.source_created_at|localtime }}</time>{% if not message.is_current_path %}<b>Cabang alternatif</b>{% endif %}</header>
+    <header><span>{{ t('conversation.you') if message.role == 'user' else t('conversation.assistant') if message.role == 'assistant' else message.role|capitalize }}</span><time>{{ message.source_created_at|localtime }}</time>{% if not message.is_current_path %}<b>{{ t('conversation.alternative_branch') }}</b>{% endif %}</header>
     <div class="message-body">{{ message.body|markdown|safe }}</div>
     {% if message.attachments %}<div class="attachments">
       {% for file in message.attachments %}
@@ -18,7 +18,7 @@
         </a>
       {% endfor %}
     </div>{% endif %}
-    {% if branches %}<small class="node">parent: {{ message.parent_source_id or 'root' }}</small>{% endif %}
+    {% if branches %}<small class="node">{{ t('conversation.parent') }}: {{ message.parent_source_id or t('conversation.root') }}</small>{% endif %}
   </article>
 {% endfor %}
 </section>

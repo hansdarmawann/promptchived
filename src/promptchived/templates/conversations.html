@@ -1,18 +1,18 @@
 {% extends "base.html" %}
-{% block title %}Percakapan · Promptchived{% endblock %}
+{% block title %}{{ t('conversations.title') }}{% endblock %}
 {% block content %}
-<div class="page-head"><div><p class="eyebrow">Arsip</p><h1>Percakapan</h1></div><a class="button" href="/search">Cari arsip</a></div>
+<div class="page-head"><div><p class="eyebrow">{{ t('conversations.eyebrow') }}</p><h1>{{ t('conversations.heading') }}</h1></div><a class="button" href="/search">{{ t('conversations.search') }}</a></div>
 <section class="conversation-list">
 {% for conversation in items %}
   <a class="conversation-row" href="/conversations/{{ conversation.id }}">
-    <div><h2>{{ conversation.title }}</h2><p>{{ conversation.provider_conversation_id or 'Tanpa ID sumber' }}</p></div>
-    <time>{{ (conversation.source_updated_at or conversation.source_created_at)|localtime or 'Tanggal tidak tersedia' }}</time>
+    <div><h2>{{ conversation.title }}</h2><p>{{ conversation.provider_conversation_id or t('conversations.no_source_id') }}</p></div>
+    <time>{{ (conversation.source_updated_at or conversation.source_created_at)|localtime or t('conversations.no_date') }}</time>
   </a>
-{% else %}<div class="empty">Belum ada percakapan. Daftarkan sumber dan jalankan worker impor.</div>{% endfor %}
+{% else %}<div class="empty">{{ t('conversations.empty') }}</div>{% endfor %}
 </section>
 <nav class="pagination">
-  {% if page > 1 %}<a href="?page={{ page - 1 }}">← Sebelumnya</a>{% endif %}
-  <span>Halaman {{ page }} dari {{ pages }}</span>
-  {% if page < pages %}<a href="?page={{ page + 1 }}">Berikutnya →</a>{% endif %}
+  {% if page > 1 %}<a href="?page={{ page - 1 }}">{{ t('pagination.previous') }}</a>{% endif %}
+  <span>{{ t('pagination.page', page=page, pages=pages) }}</span>
+  {% if page < pages %}<a href="?page={{ page + 1 }}">{{ t('pagination.next') }}</a>{% endif %}
 </nav>
 {% endblock %}

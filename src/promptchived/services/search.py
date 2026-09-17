@@ -9,11 +9,11 @@ from .embeddings import EmbeddingService
 
 
 BASE_FILTERS = """
-  (:source_id IS NULL OR s.id = CAST(:source_id AS uuid))
-  AND (:provider IS NULL OR s.provider = :provider)
-  AND (:role IS NULL OR m.role = :role)
-  AND (:date_from IS NULL OR m.source_created_at >= CAST(:date_from AS timestamptz))
-  AND (:date_to IS NULL OR m.source_created_at < CAST(:date_to AS timestamptz))
+  (CAST(:source_id AS uuid) IS NULL OR s.id = CAST(:source_id AS uuid))
+  AND (CAST(:provider AS text) IS NULL OR s.provider = CAST(:provider AS text))
+  AND (CAST(:role AS text) IS NULL OR m.role = CAST(:role AS text))
+  AND (CAST(:date_from AS timestamptz) IS NULL OR m.source_created_at >= CAST(:date_from AS timestamptz))
+  AND (CAST(:date_to AS timestamptz) IS NULL OR m.source_created_at < CAST(:date_to AS timestamptz))
 """
 
 
@@ -163,4 +163,3 @@ def search(
         "embedding_coverage": coverage,
         "notice": notice,
     }
-

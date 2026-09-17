@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from .db import get_db
+from .i18n import SUPPORTED_LANGUAGES, language_from_request, translator
 from .models import Attachment, Conversation, ImportJob, Message, Source
 from .schemas import (
     ConversationRead,
@@ -34,6 +35,22 @@ templates.env.filters["highlight"] = render_highlight
 templates.env.filters["localtime"] = format_datetime
 
 
+def render_template(request: Request, name: str, context: dict | None = None):
+    language = language_from_request(request)
+    return templates.TemplateResponse(
+        request=request,
+        name=name,
+        context={**(context or {}), "lang": language, "t": translator(language)},
+    )
+
+
+def optional_choice(value: str | None, choices: set[str], field: str) -> str | None:
+    value = value or None
+    if value is not None and value not in choices:
+        raise HTTPException(422, f"Invalid {field}")
+    return value
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -43,9 +60,20 @@ def health() -> dict[str, str]:
 def home(request: Request, db: Session = Depends(get_db)):
     sources = list(db.scalars(select(Source).order_by(Source.name)))
     recent_jobs = list(db.scalars(select(ImportJob).order_by(ImportJob.created_at.desc()).limit(10)))
-    return templates.TemplateResponse(
-        request=request, name="index.html", context={"sources": sources, "jobs": recent_jobs}
+    return render_template(request, "index.html", {"sources": sources, "jobs": recent_jobs})
+
+
+@app.post("/language")
+def set_language(language: str = Form(...), next_url: str = Form("/")):
+    if language not in SUPPORTED_LANGUAGES:
+        raise HTTPException(422, "Unsupported language")
+    if not next_url.startswith("/") or next_url.startswith("//"):
+        next_url = "/"
+    response = RedirectResponse(next_url, status_code=303)
+    response.set_cookie(
+        "promptchived_language", language, max_age=31_536_000, samesite="lax"
     )
+    return response
 
 
 @app.post("/sources")
@@ -83,10 +111,10 @@ def conversations_page(
         query = query.where(Conversation.source_id == source_id)
     total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
     items = list(db.scalars(query.offset((page - 1) * per_page).limit(per_page)))
-    return templates.TemplateResponse(
-        request=request,
-        name="conversations.html",
-        context={"items": items, "page": page, "pages": max(1, (total + per_page - 1) // per_page)},
+    return render_template(
+        request,
+        "conversations.html",
+        {"items": items, "page": page, "pages": max(1, (total + per_page - 1) // per_page)},
     )
 
 
@@ -106,10 +134,10 @@ def conversation_page(
     if not conversation:
         raise HTTPException(404, "Percakapan tidak ditemukan")
     messages = conversation.messages if branches else [m for m in conversation.messages if m.is_current_path]
-    return templates.TemplateResponse(
-        request=request,
-        name="conversation.html",
-        context={"conversation": conversation, "messages": messages, "branches": branches, "focus": focus},
+    return render_template(
+        request,
+        "conversation.html",
+        {"conversation": conversation, "messages": messages, "branches": branches, "focus": focus},
     )
 
 
@@ -118,16 +146,18 @@ def search_page(
     request: Request,
     q: str = "",
     mode: Literal["fulltext", "semantic", "hybrid"] = "hybrid",
-    provider: Literal["chatgpt", "gemini"] | None = None,
+    provider: str | None = None,
     role: str | None = None,
     page: int = Query(1, ge=1),
     db: Session = Depends(get_db),
 ):
+    provider = optional_choice(provider, {"chatgpt", "gemini"}, "provider")
+    role = optional_choice(role, {"user", "assistant", "system", "tool"}, "role")
     result = search(db, q, mode=mode, provider=provider, role=role, page=page) if q.strip() else None
-    return templates.TemplateResponse(
-        request=request,
-        name="search.html",
-        context={"result": result, "q": q, "mode": mode, "provider": provider, "role": role},
+    return render_template(
+        request,
+        "search.html",
+        {"result": result, "q": q, "mode": mode, "provider": provider, "role": role},
     )
 
 
@@ -205,7 +235,7 @@ def api_search(
     q: str = Query(min_length=1),
     mode: Literal["fulltext", "semantic", "hybrid"] = "hybrid",
     source_id: uuid.UUID | None = None,
-    provider: Literal["chatgpt", "gemini"] | None = None,
+    provider: str | None = None,
     role: str | None = None,
     date_from: datetime | None = None,
     date_to: datetime | None = None,
@@ -213,6 +243,8 @@ def api_search(
     per_page: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
+    provider = optional_choice(provider, {"chatgpt", "gemini"}, "provider")
+    role = optional_choice(role, {"user", "assistant", "system", "tool"}, "role")
     return search(
         db, q, mode, source_id, provider, role, date_from, date_to, page, per_page
     )
