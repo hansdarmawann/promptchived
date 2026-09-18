@@ -21,6 +21,8 @@ x-app: &app
 services:
   database:
     image: pgvector/pgvector:0.8.6-pg18-trixie
+    ports:
+      - "127.0.0.1:5433:5432"
     environment:
       POSTGRES_DB: ${PROMPTCHIVED_DB_NAME:-promptchived}
       POSTGRES_USER: ${PROMPTCHIVED_DB_USER:-promptchived}
