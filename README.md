@@ -6,6 +6,12 @@ Promptchived is a private local web application for reading and searching ChatGP
 
 The interface supports English and Indonesian. English is the default, and the selected language is remembered in the browser.
 
+## Why Promptchived?
+
+Promptchived grew out of a simple concern: conversations with ChatGPT and Gemini can contain ideas, decisions, and personal context that matter over time, yet the platforms' memory and storage are not something we can rely on forever. Chats may be hard to find, account features may change, and keeping every conversation inside a hosted service leaves little control over a personal archive.
+
+This project makes it possible to keep a private, searchable copy of your exported conversations on your own computer. Your history stays available even when it is no longer convenient—or possible—to rely on the original service as its long-term home.
+
 ## Requirements
 
 - Windows 10/11 and 64-bit Python 3.12
