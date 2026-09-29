@@ -19,13 +19,34 @@ def _load_asset_map(folder: Path) -> dict[str, str]:
     return {}
 
 
+def _attachment_pointer(value: Any) -> str | None:
+    """Extract the file reference from string and object-style export pointers."""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        for key in ("asset_pointer", "file_pointer", "pointer", "id"):
+            nested = value.get(key)
+            if isinstance(nested, str):
+                return nested
+    return None
+
+
 def _asset_path(pointer: str, asset_map: dict[str, str], folder: Path, root: Path) -> Path | None:
     name = pointer.rsplit("/", 1)[-1]
+    if not name or len(name) > 255:
+        return None
     options = [name, f"{name}.dat" if not name.endswith(".dat") else name]
     mapped = next((asset_map[key] for key in options if key in asset_map), None)
     candidates = [folder / mapped] if mapped else []
     candidates.extend(folder / value for value in options)
-    return next((path for path in candidates if path and path.is_file() and path.resolve().is_relative_to(root.resolve())), None)
+    resolved_root = root.resolve()
+    for candidate in candidates:
+        try:
+            if candidate.is_file() and candidate.resolve().is_relative_to(resolved_root):
+                return candidate
+        except OSError:
+            continue
+    return None
 
 
 def _content_text(content: dict[str, Any]) -> str:
@@ -59,10 +80,12 @@ def _attachments(
     results: list[NormalizedAttachment] = []
     seen: set[str] = set()
     for item in candidates:
-        pointer = item.get("asset_pointer") or item.get("audio_asset_pointer") or item.get("id")
+        pointer = _attachment_pointer(
+            item.get("asset_pointer") or item.get("audio_asset_pointer") or item.get("id")
+        )
         if not pointer:
             continue
-        path = _asset_path(str(pointer), asset_map, folder, root)
+        path = _asset_path(pointer, asset_map, folder, root)
         if path is None:
             continue
         relative = path.resolve().relative_to(root.resolve()).as_posix()

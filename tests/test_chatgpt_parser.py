@@ -44,3 +44,46 @@ def test_chatgpt_parser_preserves_branches_and_attachment(tmp_path):
     active = next(m for m in conversation.messages if m.source_id == "message-b")
     assert active.is_current_path is True
     assert active.attachments[0].relative_path == "image.png"
+
+
+def test_chatgpt_parser_extracts_audio_attachment_from_object_pointer(tmp_path):
+    audio = tmp_path / "recording.wav"
+    audio.write_bytes(b"wav")
+    (tmp_path / "conversation_asset_file_names.json").write_text(
+        json.dumps({"file-audio.dat": "recording.wav"}), encoding="utf-8"
+    )
+    export = [
+        {
+            "id": "conversation-audio",
+            "title": "Audio conversation",
+            "mapping": {
+                "audio": {
+                    "id": "audio",
+                    "parent": None,
+                    "message": {
+                        "id": "message-audio",
+                        "author": {"role": "user"},
+                        "content": {
+                            "content_type": "multimodal_text",
+                            "parts": [
+                                {
+                                    "audio_asset_pointer": {
+                                        "asset_pointer": "file-service://file-audio.dat",
+                                        "content_type": "audio_asset_pointer",
+                                        "metadata": {"transcription": None},
+                                    }
+                                }
+                            ],
+                        },
+                        "metadata": {},
+                    },
+                }
+            },
+        }
+    ]
+    path = tmp_path / "conversations-004.json"
+    path.write_text(json.dumps(export), encoding="utf-8")
+
+    conversation = parse_chatgpt_file(path, tmp_path)[0]
+
+    assert conversation.messages[0].attachments[0].relative_path == "recording.wav"
