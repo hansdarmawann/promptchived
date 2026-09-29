@@ -143,10 +143,18 @@ def search(
         lexical = fulltext_candidates(session, parameters, settings.search_candidates)
     if mode in {"semantic", "hybrid"}:
         if coverage > 0:
-            vector = EmbeddingService().encode_query(query)
-            semantic = semantic_candidates(session, parameters, vector, settings.search_candidates)
+            try:
+                vector = EmbeddingService().encode_query(query)
+                semantic = semantic_candidates(session, parameters, vector, settings.search_candidates)
+            except (NotImplementedError, OSError, RuntimeError):
+                # The archive is still searchable when PyTorch cannot load the
+                # optional embedding model in the web process.
+                notice = "Embeddings are unavailable; keyword results are shown."
         else:
             notice = "Embeddings are unavailable; keyword results are shown."
+
+    if not semantic and mode in {"semantic", "hybrid"} and not lexical:
+        lexical = fulltext_candidates(session, parameters, settings.search_candidates)
 
     if mode == "fulltext" or (mode == "hybrid" and not semantic):
         ranked = _collapse(lexical)
