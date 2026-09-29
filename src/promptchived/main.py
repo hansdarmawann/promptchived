@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
+from .config import get_settings
 from .db import get_db
 from .i18n import SUPPORTED_LANGUAGES, language_from_request, translator
 from .models import Attachment, Conversation, ImportJob, Message, Source
@@ -51,16 +52,75 @@ def optional_choice(value: str | None, choices: set[str], field: str) -> str | N
     return value
 
 
+def source_browser_roots() -> list[Path]:
+    """Return existing folders explicitly allowed in the local folder picker."""
+    roots: list[Path] = []
+    for value in get_settings().source_browser_roots.split(";"):
+        if not value.strip():
+            continue
+        root = Path(value.strip()).expanduser().resolve()
+        if root.is_dir() and root not in roots:
+            roots.append(root)
+    return roots
+
+
+def is_inside_browser_root(path: Path, roots: list[Path]) -> bool:
+    return any(path == root or root in path.parents for root in roots)
+
+
+def source_path_status(root_path: str) -> str:
+    """A source may be registered while its external drive is disconnected."""
+    try:
+        return "available" if Path(root_path).is_dir() else "unavailable"
+    except OSError:
+        return "unavailable"
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/source-folders")
+def list_source_folders(path: str | None = None) -> dict:
+    """List configured local folders without exposing the rest of the filesystem."""
+    roots = source_browser_roots()
+    root_items = [{"name": root.name or str(root), "path": str(root)} for root in roots]
+    if path is None:
+        return {"roots": root_items, "path": None, "parent": None, "folders": []}
+
+    current = Path(path).expanduser().resolve()
+    if not is_inside_browser_root(current, roots):
+        raise HTTPException(403, "Folder is outside the configured source locations")
+    if not current.is_dir():
+        raise HTTPException(404, "Folder not found")
+
+    try:
+        folders = sorted(
+            (
+                {"name": item.name, "path": str(item.resolve())}
+                for item in current.iterdir()
+                if item.is_dir() and is_inside_browser_root(item.resolve(), roots)
+            ),
+            key=lambda item: item["name"].lower(),
+        )
+    except OSError as exc:
+        raise HTTPException(403, "Folder cannot be read") from exc
+
+    parent = str(current.parent) if current not in roots else None
+    return {"roots": root_items, "path": str(current), "parent": parent, "folders": folders}
 
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, db: Session = Depends(get_db)):
     sources = list(db.scalars(select(Source).order_by(Source.name)))
     recent_jobs = list(db.scalars(select(ImportJob).order_by(ImportJob.created_at.desc()).limit(10)))
-    return render_template(request, "index.html", {"sources": sources, "jobs": recent_jobs})
+    statuses = {source.id: source_path_status(source.root_path) for source in sources}
+    return render_template(
+        request,
+        "index.html",
+        {"sources": sources, "jobs": recent_jobs, "source_statuses": statuses},
+    )
 
 
 @app.post("/language")

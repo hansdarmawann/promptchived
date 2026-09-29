@@ -58,3 +58,24 @@ def test_language_redirect_rejects_external_target():
 
     assert response.status_code == 303
     assert response.headers["location"] == "/"
+
+
+def test_source_folder_picker_only_lists_configured_locations(tmp_path):
+    allowed = tmp_path / "exports"
+    allowed.mkdir()
+    child = allowed / "chatgpt"
+    child.mkdir()
+    outside = tmp_path / "private"
+    outside.mkdir()
+    client = TestClient(app)
+
+    with patch("promptchived.main.source_browser_roots", return_value=[allowed]):
+        roots = client.get("/api/source-folders")
+        listing = client.get("/api/source-folders", params={"path": str(allowed)})
+        blocked = client.get("/api/source-folders", params={"path": str(outside)})
+
+    assert roots.status_code == 200
+    assert roots.json()["roots"] == [{"name": "exports", "path": str(allowed.resolve())}]
+    assert listing.status_code == 200
+    assert listing.json()["folders"] == [{"name": "chatgpt", "path": str(child.resolve())}]
+    assert blocked.status_code == 403

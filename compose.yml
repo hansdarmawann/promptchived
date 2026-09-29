@@ -11,11 +11,21 @@ x-app: &app
     PROMPTCHIVED_EMBEDDING_MODEL: intfloat/multilingual-e5-small
     PROMPTCHIVED_MODEL_CACHE: /app/.models
     PROMPTCHIVED_EMBEDDING_DEVICE: cpu
+    PROMPTCHIVED_SOURCE_BROWSER_ROOTS: /sources/chatgpt;/sources/gemini
   volumes:
     - promptchived-models:/app/.models
+    # Retained for existing registrations that use /archives/... paths.
     - type: bind
       source: ${PROMPTCHIVED_ARCHIVE_PATH:-./archives}
       target: /archives
+      read_only: true
+    - type: bind
+      source: ${PROMPTCHIVED_CHATGPT_EXPORT_PATH:-${PROMPTCHIVED_ARCHIVE_PATH:-./archives}/chatgpt}
+      target: /sources/chatgpt
+      read_only: true
+    - type: bind
+      source: ${PROMPTCHIVED_GEMINI_EXPORT_PATH:-${PROMPTCHIVED_ARCHIVE_PATH:-./archives}/gemini}
+      target: /sources/gemini
       read_only: true
 
 services:

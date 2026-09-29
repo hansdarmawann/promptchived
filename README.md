@@ -74,7 +74,7 @@ promptchived bootstrap
 promptchived scan-all
 ```
 
-You can also register folders directly from the home page. The ChatGPT provider discovers `conversations*.json`; the Gemini provider discovers `MyActivity*.html`. Files with unchanged hashes are skipped.
+You can also register folders directly from the home page. The ChatGPT provider discovers `conversations*.json`; the Gemini provider discovers `MyActivity*.html`. Files with unchanged hashes are skipped. For the folder picker in a native installation, set `PROMPTCHIVED_SOURCE_BROWSER_ROOTS` to the semicolon-separated export locations you want it to show; typing or pasting a path remains available.
 
 Run the worker in a separate terminal:
 
@@ -102,11 +102,12 @@ Create the Docker environment file:
 Copy-Item .env.docker.example .env.docker
 ```
 
-Edit `.env.docker`. Set a database password containing URL-safe characters and point `PROMPTCHIVED_ARCHIVE_PATH` to the common parent of the ChatGPT and Gemini export folders. Use forward slashes for a Windows path:
+Edit `.env.docker`. Set a database password containing URL-safe characters and set each export folder separately. The folders may be on different drives; use forward slashes for Windows paths:
 
 ```dotenv
 PROMPTCHIVED_DB_PASSWORD=replace-this-password
-PROMPTCHIVED_ARCHIVE_PATH=G:/hadama10/backups/account-name
+PROMPTCHIVED_CHATGPT_EXPORT_PATH=G:/hadama10/backups/chatgpt
+PROMPTCHIVED_GEMINI_EXPORT_PATH=D:/exports/gemini
 ```
 
 Start the complete stack:
@@ -116,7 +117,9 @@ docker compose --env-file .env.docker up --build -d
 docker compose --env-file .env.docker ps
 ```
 
-Open <http://127.0.0.1:8765>. Register source folders using their container paths, such as `/archives/chatgpt` and `/archives/gemini`. The host archive mount is read-only. The first semantic search or embedding job downloads the model into the shared `promptchived-models` volume.
+Open <http://127.0.0.1:8765>. Use **Choose folder** and select the ChatGPT or Gemini location. The picker only shows folders available to the containers, so it selects `/sources/chatgpt` or `/sources/gemini` without requiring you to type a Docker path. You can still paste a container path manually. Both host mounts are read-only. The first semantic search or embedding job downloads the model into the shared `promptchived-models` volume.
+
+Existing installations that still set `PROMPTCHIVED_ARCHIVE_PATH` and have registered `/archives/...` paths continue to work. New installations should use the two provider-specific variables above when their exports are in different locations.
 
 Useful commands:
 
@@ -142,7 +145,7 @@ docker compose --env-file .env.docker exec database pg_restore -U promptchived -
 Update the restored Windows source paths to their container paths, then start the remaining services:
 
 ```powershell
-docker compose --env-file .env.docker exec database psql -U promptchived -d promptchived -c "UPDATE sources SET root_path = '/archives/chatgpt' WHERE provider = 'chatgpt'; UPDATE sources SET root_path = '/archives/gemini' WHERE provider = 'gemini';"
+docker compose --env-file .env.docker exec database psql -U promptchived -d promptchived -c "UPDATE sources SET root_path = '/sources/chatgpt' WHERE provider = 'chatgpt'; UPDATE sources SET root_path = '/sources/gemini' WHERE provider = 'gemini';"
 docker compose --env-file .env.docker up -d
 ```
 

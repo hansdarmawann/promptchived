@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     chunk_overlap: int = 50
     search_candidates: int = 100
     rrf_k: int = 60
+    # Semicolon-separated directories which can be shown in the source-folder picker.
+    # Keep this explicit: the local web UI must not expose arbitrary filesystem paths.
+    source_browser_roots: str = ""
 
     @property
     def zoneinfo(self) -> ZoneInfo:

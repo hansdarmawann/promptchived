@@ -15,7 +15,14 @@
       <label>{{ t('home.provider') }}
         <select name="provider"><option value="chatgpt">ChatGPT</option><option value="gemini">Gemini</option></select>
       </label>
-      <label>{{ t('home.export_folder') }} <input name="root_path" placeholder="G:\backups\chatgpt" required></label>
+      <label>
+        <span>{{ t('home.export_folder') }}</span>
+        <div class="path-input">
+          <input id="source-root-path" name="root_path" placeholder="G:\backups\chatgpt" required>
+          <button type="button" class="secondary folder-picker-trigger">{{ t('home.choose_folder') }}</button>
+        </div>
+        <small class="field-help">{{ t('home.export_folder_help') }}</small>
+      </label>
       <button type="submit">{{ t('home.register') }}</button>
     </form>
   </section>
@@ -26,7 +33,11 @@
       {% for source in sources %}
         <article class="source-card">
           <div><span class="badge {{ source.provider }}">{{ source.provider }}</span><h3>{{ source.name }}</h3></div>
+          <p class="source-path-label">{{ t('home.path_used') }}</p>
           <p class="path">{{ source.root_path }}</p>
+          <p class="source-availability {{ source_statuses.get(source.id) }}">
+            {{ t('home.source_available') if source_statuses.get(source.id) == 'available' else t('home.source_unavailable') }}
+          </p>
           <form action="/sources/{{ source.id }}/scan" method="post"><button type="submit" class="secondary">{{ t('home.rescan') }}</button></form>
         </article>
       {% endfor %}
@@ -46,4 +57,17 @@
   </tr>{% endfor %}</tbody></table>
   {% else %}<p class="muted">{{ t('home.no_jobs') }}</p>{% endif %}
 </section>
+
+<dialog id="folder-picker" aria-labelledby="folder-picker-title">
+  <div class="folder-picker-head">
+    <div><h2 id="folder-picker-title">{{ t('home.folder_picker_title') }}</h2><p class="muted">{{ t('home.folder_picker_intro') }}</p></div>
+    <button type="button" class="secondary folder-picker-close" aria-label="Close">×</button>
+  </div>
+  <div id="folder-picker-content" class="folder-picker-content" aria-live="polite"></div>
+</dialog>
+<script src="{{ url_for('static', path='/source-picker.js') }}"
+  data-empty="{{ t('home.folder_picker_empty') }}"
+  data-error="{{ t('home.folder_picker_error') }}"
+  data-up="{{ t('home.folder_picker_up') }}"
+  data-select="{{ t('home.folder_picker_select') }}"></script>
 {% endblock %}
